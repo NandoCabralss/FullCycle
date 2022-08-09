@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  db:
+    build: 
+      context: .
+      dockerfile: db/Dockerfile.db
+    networks:
+      - node-full-cycle
+    environment:
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=somestrongone
+      - MYSQL_ROOT_PASSWORD=somestrongone
+      - MYSQL_DATABASE=fullcycle
+    volumes:
+      - mysqldb:/var/lib/mysql
+    expose:
+      - 3306
+
+  app:
+    image: node:lts-alpine3.16
+    networks:
+      - node-full-cycle
+    environment:
+      - PORT=3000
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=somestrongone
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=fullcycle
+    expose:
+      - 3000
+    volumes:
+      - ./src:/app
+    working_dir: /app
+    command:
+      - index.js
+    depends_on:
+      - db
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile.nginx
+    networks:
+      - node-full-cycle
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+
+
+networks:
+  node-full-cycle:
+    name: node-full-cycle
+    driver: bridge
+
+volumes:
+  mysqldb:
